@@ -1,0 +1,10 @@
+{
+  "topic": "Source Schema Smoke",
+  "source_count": 5,
+  "generated_at": "2026-03-15T14:49:24.235219+00:00",
+  "artifacts": {
+    "markdown": "02_Research/source_schema_smoke.md",
+    "json": "02_Research/source_schema_smoke.json",
+    "run": "02_Research/source_schema_smoke.run.json"
+  }
+}

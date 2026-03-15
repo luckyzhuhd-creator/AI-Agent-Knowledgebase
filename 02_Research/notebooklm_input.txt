@@ -1,0 +1,23 @@
+
+Template Version: v1
+Research topic: CI Smoke
+
+Sources:
+- https://www.youtube.com/watch?v=sElE_BfQ67s
+- https://www.youtube.com/watch?v=sz0jSs3nMcY
+- https://www.youtube.com/watch?v=3XqqkrJENB4
+- https://www.youtube.com/watch?v=-_ByMRb_I2U
+- https://www.youtube.com/watch?v=_VuJA-VQRcY
+
+
+Please provide:
+
+1. Summary
+2. Key concepts
+3. Architecture explanation
+4. Important insights
+
+Output format:
+- Use concise bullet points
+- Keep all claims traceable to provided sources
+- End with a short action plan
