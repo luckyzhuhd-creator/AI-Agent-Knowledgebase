@@ -4,3 +4,4 @@ __pycache__/
 .pytest_cache/
 02_Research/
 .DS_Store
+.obsidian/graph.json
