@@ -18,6 +18,11 @@ class ResearchAgent:
             if exc.name == "yt_dlp":
                 raise RuntimeError("Missing dependency: yt-dlp. Install with './.venv/bin/python -m pip install yt-dlp'.") from exc
             raise
+        except Exception as exc:
+            error_text = str(exc)
+            if "CERTIFICATE_VERIFY_FAILED" in error_text:
+                raise RuntimeError("YouTube SSL verification failed. Ensure certifi is installed and SSL_CERT_FILE is configured.") from exc
+            raise
 
         normalized_sources = []
         for item in raw_sources:

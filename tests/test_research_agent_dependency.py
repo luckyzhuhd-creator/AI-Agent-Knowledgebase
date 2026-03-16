@@ -12,3 +12,13 @@ def test_research_agent_raises_runtime_error_when_yt_dlp_missing(monkeypatch):
 
     with pytest.raises(RuntimeError, match="Missing dependency: yt-dlp"):
         ResearchAgent().run("AI Agent Framework")
+
+
+def test_research_agent_raises_runtime_error_when_ssl_verification_failed(monkeypatch):
+    def fake_search_youtube(_topic):
+        raise RuntimeError("[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed")
+
+    monkeypatch.setattr(research_module, "search_youtube", fake_search_youtube)
+
+    with pytest.raises(RuntimeError, match="YouTube SSL verification failed"):
+        ResearchAgent().run("AI Agent Framework")

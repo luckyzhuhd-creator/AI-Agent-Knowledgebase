@@ -1,7 +1,7 @@
 PYTHON := ./.venv/bin/python
 TOPIC ?= AI Agent Framework
 
-.PHONY: install test run freeze ci contract
+.PHONY: install test run freeze ci contract smoke
 
 install:
 	$(PYTHON) -m pip install -r requirements.txt
@@ -20,4 +20,6 @@ contract:
 	$(PYTHON) -m pytest -q tests/test_writer_agent_artifacts.py tests/test_orchestrator_smoke.py
 
 ci: test contract
+
+smoke:
 	$(PYTHON) -m agents.research "CI Smoke"

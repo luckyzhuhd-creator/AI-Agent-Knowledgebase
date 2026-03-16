@@ -22,7 +22,11 @@ def test_writer_agent_writes_artifacts(monkeypatch, tmp_path):
     assert run.exists()
 
     run_data = json.loads(run.read_text(encoding="utf-8"))
-    assert run_data["schema_version"] == "1.0"
+    assert run_data["schema_version"] == "1.1"
+    assert isinstance(run_data["run_id"], str)
+    assert run_data["run_id"]
+    assert run_data["status"] == "success"
+    assert run_data["duration_ms"] >= 0
     assert run_data["topic"] == "AI Agent Framework"
     assert run_data["source_count"] == 2
     assert run_data["artifacts"]["markdown"].endswith("ai_agent_framework.md")

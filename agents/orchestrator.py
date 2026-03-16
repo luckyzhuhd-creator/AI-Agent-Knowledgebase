@@ -1,4 +1,6 @@
 import logging
+from time import perf_counter
+from uuid import uuid4
 
 from .research_agent import ResearchAgent
 from .analysis_agent import AnalysisAgent
@@ -13,7 +15,9 @@ class Orchestrator:
 
     def run(self, topic):
 
-        logger.info("Pipeline started topic=%s", topic)
+        run_id = str(uuid4())
+        started_at = perf_counter()
+        logger.info("Pipeline started run_id=%s topic=%s", run_id, topic)
 
         research = ResearchAgent()
         analysis = AnalysisAgent()
@@ -26,7 +30,8 @@ class Orchestrator:
 
         note = knowledge.build(topic, urls)
 
-        run_payload = writer.write(topic, note, urls)
+        duration_ms = int((perf_counter() - started_at) * 1000)
+        run_payload = writer.write(topic, note, urls, run_id=run_id, status="success", duration_ms=duration_ms)
 
         markdown_path = ""
         if isinstance(run_payload, dict):
@@ -34,4 +39,4 @@ class Orchestrator:
             if isinstance(artifacts, dict):
                 markdown_path = str(artifacts.get("markdown", ""))
 
-        logger.info("Pipeline finished topic=%s sources=%d markdown=%s", topic, len(urls), markdown_path)
+        logger.info("Pipeline finished run_id=%s topic=%s sources=%d duration_ms=%d markdown=%s", run_id, topic, len(urls), duration_ms, markdown_path)

@@ -21,8 +21,8 @@ def test_orchestrator_run_calls_pipeline_in_order(monkeypatch):
             return "note"
 
     class FakeWriterAgent:
-        def write(self, topic, content, urls):
-            calls.append(("writer", topic, content, urls))
+        def write(self, topic, content, urls, **kwargs):
+            calls.append(("writer", topic, content, urls, kwargs))
             return {
                 "artifacts": {
                     "markdown": "02_Research/ai_agent_framework.md",
@@ -41,7 +41,10 @@ def test_orchestrator_run_calls_pipeline_in_order(monkeypatch):
     assert calls[0] == ("research", "AI Agent Framework")
     assert calls[1][0] == "analysis"
     assert calls[2] == ("knowledge", "AI Agent Framework", ["https://x.com"])
-    assert calls[3] == ("writer", "AI Agent Framework", "note", ["https://x.com"])
+    assert calls[3][0:4] == ("writer", "AI Agent Framework", "note", ["https://x.com"])
+    assert "run_id" in calls[3][4]
+    assert calls[3][4]["status"] == "success"
+    assert isinstance(calls[3][4]["duration_ms"], int)
 
 
 def test_orchestrator_run_tolerates_none_writer_payload(monkeypatch):
@@ -58,7 +61,7 @@ def test_orchestrator_run_tolerates_none_writer_payload(monkeypatch):
             return "note"
 
     class FakeWriterAgent:
-        def write(self, topic, content, urls):
+        def write(self, topic, content, urls, **kwargs):
             return None
 
     monkeypatch.setattr(orch_module, "ResearchAgent", FakeResearchAgent)
