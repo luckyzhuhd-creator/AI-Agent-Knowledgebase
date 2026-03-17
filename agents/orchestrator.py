@@ -13,9 +13,9 @@ logger = logging.getLogger(__name__)
 
 class Orchestrator:
 
-    def run(self, topic):
+    def run(self, topic, run_id=None):
 
-        run_id = str(uuid4())
+        run_id = run_id or str(uuid4())
         started_at = perf_counter()
         logger.info("Pipeline started run_id=%s topic=%s", run_id, topic)
 
@@ -40,3 +40,5 @@ class Orchestrator:
                 markdown_path = str(artifacts.get("markdown", ""))
 
         logger.info("Pipeline finished run_id=%s topic=%s sources=%d duration_ms=%d markdown=%s", run_id, topic, len(urls), duration_ms, markdown_path)
+
+        return run_payload

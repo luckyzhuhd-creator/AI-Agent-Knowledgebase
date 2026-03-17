@@ -19,6 +19,21 @@ class WriterAgent:
         slug = re.sub(r"_+", "_", slug)
         return slug or "untitled"
 
+    def _build_run_payload(self, topic, run_id, status, duration_ms, source_count, artifacts, error_code="", error_message=""):
+
+        return {
+            "schema_version": "1.2",
+            "run_id": run_id or str(uuid4()),
+            "status": status,
+            "duration_ms": int(duration_ms),
+            "topic": topic,
+            "source_count": int(source_count),
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "error_code": error_code,
+            "error_message": error_message,
+            "artifacts": artifacts,
+        }
+
     def write(self, topic, content, urls, run_id=None, status="success", duration_ms=0):
 
         directory = "02_Research"
@@ -35,24 +50,52 @@ class WriterAgent:
         with open(json_path, "w", encoding="utf-8") as file:
             json.dump({"topic": topic, "sources": urls, "content": content}, file, ensure_ascii=False, indent=2)
 
-        run_payload = {
-            "schema_version": "1.1",
-            "run_id": run_id or str(uuid4()),
-            "status": status,
-            "duration_ms": int(duration_ms),
-            "topic": topic,
-            "source_count": len(urls),
-            "generated_at": datetime.now(timezone.utc).isoformat(),
-            "artifacts": {
+        run_payload = self._build_run_payload(
+            topic=topic,
+            run_id=run_id,
+            status=status,
+            duration_ms=duration_ms,
+            source_count=len(urls),
+            artifacts={
                 "markdown": md_path,
                 "json": json_path,
                 "run": run_path,
             },
-        }
+        )
 
         with open(run_path, "w", encoding="utf-8") as file:
             json.dump(run_payload, file, ensure_ascii=False, indent=2)
 
         logger.info("Note created md=%s json=%s run=%s", md_path, json_path, run_path)
+
+        return run_payload
+
+    def write_failure_run(self, topic, run_id, error_code, error_message, duration_ms=0):
+
+        directory = "02_Research"
+        os.makedirs(directory, exist_ok=True)
+
+        slug = self.slugify(topic)
+        run_path = os.path.join(directory, f"{slug}.run.json")
+
+        run_payload = self._build_run_payload(
+            topic=topic,
+            run_id=run_id,
+            status="failed",
+            duration_ms=duration_ms,
+            source_count=0,
+            artifacts={
+                "markdown": "",
+                "json": "",
+                "run": run_path,
+            },
+            error_code=error_code,
+            error_message=error_message,
+        )
+
+        with open(run_path, "w", encoding="utf-8") as file:
+            json.dump(run_payload, file, ensure_ascii=False, indent=2)
+
+        logger.info("Failure metadata written run=%s code=%s", run_path, error_code)
 
         return run_payload
