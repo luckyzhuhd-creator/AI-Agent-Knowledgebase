@@ -1,6 +1,7 @@
 import logging
 import os
 
+from agents.source_contract import extract_urls
 from tools.notebooklm.notebooklm_prompt import generate_prompt
 
 
@@ -13,19 +14,7 @@ class AnalysisAgent:
 
         logger.info("Prepare NotebookLM sources topic=%s", topic)
 
-        urls = []
-        for source in sources:
-            if isinstance(source, dict):
-                url = source.get("url", "")
-            else:
-                logger.warning("Skip non-standard source item type=%s", type(source).__name__)
-                url = ""
-
-            if isinstance(url, str):
-                url = url.strip()
-
-            if url:
-                urls.append(url)
+        urls = extract_urls(sources)
 
         prompt = generate_prompt(topic, urls)
         os.makedirs("02_Research", exist_ok=True)

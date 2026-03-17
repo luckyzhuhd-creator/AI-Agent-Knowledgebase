@@ -2,6 +2,7 @@ import logging
 import sys
 
 from agents.orchestrator import Orchestrator
+from agents.pipeline_error import PipelineError
 
 
 def main():
@@ -18,8 +19,11 @@ def main():
 
     try:
         Orchestrator().run(topic)
+    except PipelineError as exc:
+        logger.error("Pipeline failed topic=%s code=%s message=%s", topic, exc.code, str(exc))
+        return exc.exit_code
     except Exception:
-        logger.exception("Pipeline failed topic=%s", topic)
+        logger.exception("Pipeline failed topic=%s code=UNEXPECTED_ERROR", topic)
         return 2
 
     return 0
