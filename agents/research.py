@@ -12,7 +12,7 @@ if __package__ in (None, ""):
         sys.path.insert(0, project_root)
 
 from agents.orchestrator import Orchestrator
-from agents.pipeline_error import PipelineError
+from agents.pipeline_error import PipelineError, UNEXPECTED_ERROR
 from agents.writer_agent import WriterAgent
 
 
@@ -79,12 +79,12 @@ def main():
         return exc.exit_code
     except Exception as exc:
         duration_ms = int((perf_counter() - started_at) * 1000)
-        writer.write_failure_run(topic, run_id, "UNEXPECTED_ERROR", str(exc), duration_ms=duration_ms)
+        writer.write_failure_run(topic, run_id, UNEXPECTED_ERROR, str(exc), duration_ms=duration_ms)
         logger.exception(
             "Pipeline failed run_id=%s topic=%s code=UNEXPECTED_ERROR",
             run_id,
             topic,
-            extra={"run_id": run_id, "topic": topic, "error_code": "UNEXPECTED_ERROR"},
+            extra={"run_id": run_id, "topic": topic, "error_code": UNEXPECTED_ERROR},
         )
         return 2
 

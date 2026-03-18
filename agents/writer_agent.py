@@ -9,6 +9,11 @@ from uuid import uuid4
 logger = logging.getLogger(__name__)
 
 
+RUN_SCHEMA_VERSION = "1.2"
+RUN_STATUS_SUCCESS = "success"
+RUN_STATUS_FAILED = "failed"
+
+
 class WriterAgent:
 
     def slugify(self, topic):
@@ -22,7 +27,7 @@ class WriterAgent:
     def _build_run_payload(self, topic, run_id, status, duration_ms, source_count, artifacts, error_code="", error_message=""):
 
         return {
-            "schema_version": "1.2",
+            "schema_version": RUN_SCHEMA_VERSION,
             "run_id": run_id or str(uuid4()),
             "status": status,
             "duration_ms": int(duration_ms),
@@ -34,7 +39,7 @@ class WriterAgent:
             "artifacts": artifacts,
         }
 
-    def write(self, topic, content, urls, run_id=None, status="success", duration_ms=0):
+    def write(self, topic, content, urls, run_id=None, status=RUN_STATUS_SUCCESS, duration_ms=0):
 
         directory = "02_Research"
         os.makedirs(directory, exist_ok=True)
@@ -81,7 +86,7 @@ class WriterAgent:
         run_payload = self._build_run_payload(
             topic=topic,
             run_id=run_id,
-            status="failed",
+            status=RUN_STATUS_FAILED,
             duration_ms=duration_ms,
             source_count=0,
             artifacts={

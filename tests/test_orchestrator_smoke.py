@@ -1,4 +1,5 @@
 from agents.orchestrator import Orchestrator
+from agents.writer_agent import RUN_STATUS_SUCCESS
 import agents.orchestrator as orch_module
 
 
@@ -43,7 +44,7 @@ def test_orchestrator_run_calls_pipeline_in_order(monkeypatch):
     assert calls[2] == ("knowledge", "AI Agent Framework", ["https://x.com"])
     assert calls[3][0:4] == ("writer", "AI Agent Framework", "note", ["https://x.com"])
     assert "run_id" in calls[3][4]
-    assert calls[3][4]["status"] == "success"
+    assert calls[3][4]["status"] == RUN_STATUS_SUCCESS
     assert isinstance(calls[3][4]["duration_ms"], int)
 
 

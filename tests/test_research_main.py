@@ -2,7 +2,7 @@ import json
 import logging
 
 import agents.research as research_module
-from agents.pipeline_error import PipelineError
+from agents.pipeline_error import PipelineError, SOURCE_FETCH_FAILED, UNEXPECTED_ERROR
 
 
 def test_main_returns_pipeline_error_exit_code_and_writes_failure_metadata(monkeypatch):
@@ -10,7 +10,7 @@ def test_main_returns_pipeline_error_exit_code_and_writes_failure_metadata(monke
 
     class FakeOrchestrator:
         def run(self, topic, run_id=None):
-            raise PipelineError("SOURCE_FETCH_FAILED", "fetch failed", exit_code=5)
+            raise PipelineError(SOURCE_FETCH_FAILED, "fetch failed")
 
     class FakeWriterAgent:
         def write_failure_run(self, topic, run_id, error_code, error_message, duration_ms=0):
@@ -27,9 +27,9 @@ def test_main_returns_pipeline_error_exit_code_and_writes_failure_metadata(monke
 
     exit_code = research_module.main()
 
-    assert exit_code == 5
+    assert exit_code == PipelineError.EXIT_CODE_BY_ERROR_CODE[SOURCE_FETCH_FAILED]
     assert captured["topic"] == "AI Topic"
-    assert captured["error_code"] == "SOURCE_FETCH_FAILED"
+    assert captured["error_code"] == SOURCE_FETCH_FAILED
     assert "fetch failed" in captured["error_message"]
     assert isinstance(captured["run_id"], str)
     assert captured["duration_ms"] >= 0
@@ -41,7 +41,7 @@ def test_main_passes_same_run_id_to_orchestrator_and_failure_writer(monkeypatch)
     class FakeOrchestrator:
         def run(self, topic, run_id=None):
             captured["orchestrator_run_id"] = run_id
-            raise PipelineError("SOURCE_FETCH_FAILED", "fetch failed", exit_code=5)
+            raise PipelineError(SOURCE_FETCH_FAILED, "fetch failed")
 
     class FakeWriterAgent:
         def write_failure_run(self, topic, run_id, error_code, error_message, duration_ms=0):
@@ -54,7 +54,7 @@ def test_main_passes_same_run_id_to_orchestrator_and_failure_writer(monkeypatch)
 
     exit_code = research_module.main()
 
-    assert exit_code == 5
+    assert exit_code == PipelineError.EXIT_CODE_BY_ERROR_CODE[SOURCE_FETCH_FAILED]
     assert isinstance(captured["orchestrator_run_id"], str)
     assert captured["orchestrator_run_id"]
     assert captured["orchestrator_run_id"] == captured["writer_run_id"]
@@ -79,8 +79,8 @@ def test_main_returns_unexpected_error_code_and_writes_failure_metadata(monkeypa
 
     exit_code = research_module.main()
 
-    assert exit_code == 2
-    assert captured["error_code"] == "UNEXPECTED_ERROR"
+    assert exit_code == PipelineError.EXIT_CODE_BY_ERROR_CODE[UNEXPECTED_ERROR]
+    assert captured["error_code"] == UNEXPECTED_ERROR
     assert "boom" in captured["error_message"]
 
 
@@ -110,7 +110,7 @@ def test_json_formatter_includes_error_context_fields():
             "args": (),
             "run_id": "run-1",
             "topic": "AI",
-            "error_code": "SOURCE_FETCH_FAILED",
+            "error_code": SOURCE_FETCH_FAILED,
         }
     )
 
@@ -118,4 +118,4 @@ def test_json_formatter_includes_error_context_fields():
 
     assert payload["run_id"] == "run-1"
     assert payload["topic"] == "AI"
-    assert payload["error_code"] == "SOURCE_FETCH_FAILED"
+    assert payload["error_code"] == SOURCE_FETCH_FAILED

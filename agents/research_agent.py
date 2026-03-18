@@ -1,6 +1,6 @@
 import logging
 
-from agents.pipeline_error import DEPENDENCY_MISSING, SSL_CERTIFICATE_VERIFY_FAILED, SOURCE_FETCH_FAILED, UNEXPECTED_ERROR, PipelineError           
+from agents.pipeline_error import DEPENDENCY_MISSING, PipelineError, SOURCE_FETCH_FAILED, SSL_CERTIFICATE_VERIFY_FAILED
 from agents.source_contract import normalize_sources
 from tools.youtube_search import search_youtube
 
