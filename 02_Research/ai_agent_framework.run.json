@@ -1,5 +1,16 @@
 {
+  "schema_version": "1.2",
+  "run_id": "d053cab2-3a93-479a-a095-63c36d82a861",
+  "status": "success",
+  "duration_ms": 1626,
   "topic": "AI Agent Framework",
   "source_count": 5,
-  "generated_at": "2026-03-15T14:00:33.021987+00:00"
+  "generated_at": "2026-03-17T09:30:35.724011+00:00",
+  "error_code": "",
+  "error_message": "",
+  "artifacts": {
+    "markdown": "02_Research/ai_agent_framework.md",
+    "json": "02_Research/ai_agent_framework.json",
+    "run": "02_Research/ai_agent_framework.run.json"
+  }
 }

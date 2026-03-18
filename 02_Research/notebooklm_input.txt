@@ -1,13 +1,13 @@
 
 Template Version: v1
-Research topic: CI Smoke
+Research topic: AI Agent Framework
 
 Sources:
-- https://www.youtube.com/watch?v=sElE_BfQ67s
-- https://www.youtube.com/watch?v=sz0jSs3nMcY
-- https://www.youtube.com/watch?v=lkJPIPm0sP8
-- https://www.youtube.com/watch?v=3XqqkrJENB4
-- https://www.youtube.com/watch?v=-_ByMRb_I2U
+- https://www.youtube.com/watch?v=ODwF-EZo_O8
+- https://www.youtube.com/watch?v=ESBMgZHzfG0
+- https://www.youtube.com/watch?v=ZaPbP9DwBOE
+- https://www.youtube.com/watch?v=8HqeY5v0ohM
+- https://www.youtube.com/watch?v=EAeUiipzCTE
 
 
 Please provide:

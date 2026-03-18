@@ -2,20 +2,19 @@
 
 ## Sources
 - https://www.youtube.com/watch?v=ODwF-EZo_O8
-- https://www.youtube.com/watch?v=FwOTs4UxQS4
-- https://www.youtube.com/watch?v=EAeUiipzCTE
-- https://www.youtube.com/watch?v=ZaPbP9DwBOE
 - https://www.youtube.com/watch?v=ESBMgZHzfG0
+- https://www.youtube.com/watch?v=ZaPbP9DwBOE
+- https://www.youtube.com/watch?v=8HqeY5v0ohM
+- https://www.youtube.com/watch?v=EAeUiipzCTE
 
 ## Related Concepts
+- [[HqeY]]
+- [[ZaPbP]]
 - [[ESBMgZHzfG]]
 - [[EZo]]
-- [[UxQS]]
+- [[EAeUiipzCTE]]
 - [[DwBOE]]
 - [[ODwF]]
-- [[EAeUiipzCTE]]
-- [[ZaPbP]]
-- [[FwOTs]]
 
 ## Insights
 NotebookLM analysis pending
