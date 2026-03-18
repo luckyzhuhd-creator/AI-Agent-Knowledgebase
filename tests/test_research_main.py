@@ -2,7 +2,7 @@ import json
 import logging
 
 import agents.research as research_module
-from agents.pipeline_error import PipelineError, SOURCE_FETCH_FAILED, UNEXPECTED_ERROR
+from agents.pipeline_error import DEPENDENCY_MISSING, PipelineError, SOURCE_FETCH_FAILED, SSL_CERTIFICATE_VERIFY_FAILED, UNEXPECTED_ERROR
 
 
 def test_main_returns_pipeline_error_exit_code_and_writes_failure_metadata(monkeypatch):
@@ -97,6 +97,18 @@ def test_configure_logging_sets_json_formatter_when_enabled(monkeypatch):
         root_logger.handlers.clear()
         for handler in old_handlers:
             root_logger.addHandler(handler)
+
+
+def test_pipeline_error_exit_code_mapping_covers_standard_codes():
+    assert PipelineError.EXIT_CODE_BY_ERROR_CODE[DEPENDENCY_MISSING] == 3
+    assert PipelineError.EXIT_CODE_BY_ERROR_CODE[SSL_CERTIFICATE_VERIFY_FAILED] == 4
+    assert PipelineError.EXIT_CODE_BY_ERROR_CODE[SOURCE_FETCH_FAILED] == 5
+    assert PipelineError.EXIT_CODE_BY_ERROR_CODE[UNEXPECTED_ERROR] == 2
+
+
+def test_pipeline_error_uses_fallback_exit_code_for_unknown_code():
+    error = PipelineError("UNKNOWN_ERROR", "x")
+    assert error.exit_code == 2
 
 
 def test_json_formatter_includes_error_context_fields():

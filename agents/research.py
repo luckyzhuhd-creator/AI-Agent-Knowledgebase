@@ -86,7 +86,7 @@ def main():
             topic,
             extra={"run_id": run_id, "topic": topic, "error_code": UNEXPECTED_ERROR},
         )
-        return 2
+        return PipelineError.EXIT_CODE_BY_ERROR_CODE[UNEXPECTED_ERROR]
 
     return 0
 

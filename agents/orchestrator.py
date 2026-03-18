@@ -5,7 +5,7 @@ from uuid import uuid4
 from .research_agent import ResearchAgent
 from .analysis_agent import AnalysisAgent
 from .knowledge_agent import KnowledgeAgent
-from .writer_agent import WriterAgent
+from .writer_agent import RUN_STATUS_SUCCESS, WriterAgent
 
 
 logger = logging.getLogger(__name__)
@@ -31,7 +31,7 @@ class Orchestrator:
         note = knowledge.build(topic, urls)
 
         duration_ms = int((perf_counter() - started_at) * 1000)
-        run_payload = writer.write(topic, note, urls, run_id=run_id, status="success", duration_ms=duration_ms)
+        run_payload = writer.write(topic, note, urls, run_id=run_id, status=RUN_STATUS_SUCCESS, duration_ms=duration_ms)
 
         markdown_path = ""
         if isinstance(run_payload, dict):
