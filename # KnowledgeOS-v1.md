@@ -37,6 +37,14 @@ python -m venv .venv
 ./.venv/bin/python -m pip install -U pytest
 ```
 
+NotebookLM 首次使用需要登录：
+
+```bash
+./.venv/bin/python -m pip install "notebooklm-py[browser]"
+playwright install chromium
+notebooklm login
+```
+
 ## 4. 快速开始
 
 运行研究流水线：
@@ -82,11 +90,13 @@ make run TOPIC="AI Agent Framework"
 
 ## 7. 配置项（环境变量）
 
-`tools/youtube_search.py` 支持以下环境变量：
+`tools/youtube_search.py` 与 NotebookLM 集成支持以下环境变量：
 
 - `YOUTUBE_MAX_RESULTS`（默认 5，范围 1~50）
 - `YOUTUBE_TIMEOUT_SECONDS`（默认 20，范围 1~120）
 - `YOUTUBE_RETRIES`（默认 3，范围 0~10）
+- `NOTEBOOKLM_AUTO_ANALYZE`（`true/false`，默认 `false`）
+- `NOTEBOOKLM_HOME`（可选，NotebookLM 认证目录，默认 `~/.notebooklm`）
 
 示例：
 

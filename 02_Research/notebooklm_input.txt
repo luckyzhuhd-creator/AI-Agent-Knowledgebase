@@ -1,13 +1,13 @@
 
 Template Version: v1
-Research topic: AI Agent Framework
+Research topic: AI Landing Zone
 
 Sources:
-- https://www.youtube.com/watch?v=ODwF-EZo_O8
-- https://www.youtube.com/watch?v=ESBMgZHzfG0
-- https://www.youtube.com/watch?v=ZaPbP9DwBOE
-- https://www.youtube.com/watch?v=8HqeY5v0ohM
-- https://www.youtube.com/watch?v=EAeUiipzCTE
+- https://www.youtube.com/watch?v=8FWdFG55nXw
+- https://www.youtube.com/watch?v=ENqkglE34mY
+- https://www.youtube.com/watch?v=k2kZlUIQ998
+- https://www.youtube.com/watch?v=-yyWQUcW59M
+- https://www.youtube.com/watch?v=0UfNC66Msj0
 
 
 Please provide:

@@ -2,7 +2,16 @@ import json
 import logging
 
 import agents.research as research_module
-from agents.pipeline_error import DEPENDENCY_MISSING, PipelineError, SOURCE_FETCH_FAILED, SSL_CERTIFICATE_VERIFY_FAILED, UNEXPECTED_ERROR
+from agents.pipeline_error import (
+    DEPENDENCY_MISSING,
+    PipelineError,
+    SOURCE_FETCH_FAILED,
+    SOURCE_FETCH_RATE_LIMITED,
+    SOURCE_FETCH_TIMEOUT,
+    SOURCE_FETCH_UNAVAILABLE,
+    SSL_CERTIFICATE_VERIFY_FAILED,
+    UNEXPECTED_ERROR,
+)
 
 
 def test_main_returns_pipeline_error_exit_code_and_writes_failure_metadata(monkeypatch):
@@ -103,6 +112,9 @@ def test_pipeline_error_exit_code_mapping_covers_standard_codes():
     assert PipelineError.EXIT_CODE_BY_ERROR_CODE[DEPENDENCY_MISSING] == 3
     assert PipelineError.EXIT_CODE_BY_ERROR_CODE[SSL_CERTIFICATE_VERIFY_FAILED] == 4
     assert PipelineError.EXIT_CODE_BY_ERROR_CODE[SOURCE_FETCH_FAILED] == 5
+    assert PipelineError.EXIT_CODE_BY_ERROR_CODE[SOURCE_FETCH_TIMEOUT] == 6
+    assert PipelineError.EXIT_CODE_BY_ERROR_CODE[SOURCE_FETCH_RATE_LIMITED] == 7
+    assert PipelineError.EXIT_CODE_BY_ERROR_CODE[SOURCE_FETCH_UNAVAILABLE] == 8
     assert PipelineError.EXIT_CODE_BY_ERROR_CODE[UNEXPECTED_ERROR] == 2
 
 
@@ -123,6 +135,10 @@ def test_json_formatter_includes_error_context_fields():
             "run_id": "run-1",
             "topic": "AI",
             "error_code": SOURCE_FETCH_FAILED,
+            "stage": "research",
+            "event": "source_fetch_failed",
+            "status": "failed",
+            "duration_ms": 123,
         }
     )
 
@@ -131,3 +147,7 @@ def test_json_formatter_includes_error_context_fields():
     assert payload["run_id"] == "run-1"
     assert payload["topic"] == "AI"
     assert payload["error_code"] == SOURCE_FETCH_FAILED
+    assert payload["stage"] == "research"
+    assert payload["event"] == "source_fetch_failed"
+    assert payload["status"] == "failed"
+    assert payload["duration_ms"] == 123

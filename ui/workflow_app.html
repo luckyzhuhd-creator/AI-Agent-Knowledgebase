@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KnowledgeOS 工作流控制台</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="/workflow_app_utils.js"></script>
+  <style>
+    :root { --bg:#0d1326; --card:#141c33; --line:#2a3a67; --text:#e9efff; --muted:#9fb0de; --p:#5a8cff; --ok:#22c47b; --err:#ef5f6c; --warn:#f5a524; }
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+    .wrap{max-width:1300px;margin:0 auto;padding:16px;display:grid;grid-template-columns:280px 1fr;gap:16px}
+    .panel{background:var(--card);border:1px solid var(--line);border-radius:12px; transition: border-color 0.3s}
+    .panel.has-error { border-color: var(--err); box-shadow: 0 0 10px rgba(239,95,108,0.2); }
+    .side{padding:16px}.main{display:grid;gap:16px}
+    .title{font-size:18px;font-weight:700; display: flex; justify-content: space-between; align-items: center;}
+    .sub{color:var(--muted);font-size:13px;margin-top:4px}
+    .steps{margin-top:12px;display:grid;gap:8px}.step{padding:10px;border:1px solid var(--line);border-radius:10px;background:#182242;display:flex;justify-content:space-between; transition: all 0.3s;}
+    .step.is-running { border-color: var(--p); background: #1a274c; }
+    .step.is-error { border-color: var(--err); background: #2a1b24; }
+    .s-pending{color:var(--muted)} .s-running{color:var(--p); font-weight: bold; animation: pulse 1.5s infinite;} .s-done{color:var(--ok)} .s-error{color:var(--err); font-weight: bold;}
+    @keyframes pulse { 0% {opacity:1;} 50% {opacity:0.5;} 100% {opacity:1;} }
+    .card{padding:16px}
+    .bar{height:10px;background:#203059;border-radius:999px;overflow:hidden;border:1px solid var(--line);margin-top:10px}
+    .bar>div{height:100%;width:0;background:linear-gradient(90deg,var(--p),#7ac0ff);transition:.25s}
+    .bar.is-error>div{background:linear-gradient(90deg,var(--err),#ff7a85);}
+    .meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;color:var(--muted);font-size:13px}
+    .meta-tag { background: #182242; padding: 2px 8px; border-radius: 4px; border: 1px solid var(--line); }
+    .meta-tag.err { color: var(--err); border-color: var(--err); background: #2a1b24; }
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(130px,1fr));gap:10px}
+    .f{display:grid;gap:6px} label{font-size:13px;color:var(--muted)}
+    input,select{background:#0f1831;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px; transition: border-color 0.2s;}
+    input:focus,select:focus{outline:none;border-color:var(--p);}
+    .btns{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+    button{border:none;border-radius:10px;padding:10px 14px;color:white;font-weight:600;cursor:pointer; transition: opacity 0.2s, transform 0.1s;}
+    button:active:not(:disabled) { transform: scale(0.96); }
+    .b1{background:var(--p)} .b2{background:var(--warn)} .b3{background:var(--ok)} .b4{background:var(--err)} button:disabled{opacity:.4;cursor:not-allowed; filter: grayscale(50%);}
+    .result{display:grid;grid-template-columns:repeat(3,minmax(120px,1fr));gap:10px}
+    .ri{background:#0f1831;border:1px solid var(--line);border-radius:10px;padding:10px; transition: all 0.3s;}
+    .ri.highlight-err { border-color: var(--err); background: #2a1b24; }
+    .k{color:var(--muted);font-size:12px}.v{margin-top:4px;font-weight:700;word-break:break-all}
+    .log{height:280px;overflow:auto;background:#0a1225;border:1px solid var(--line);border-radius:10px;padding:10px;font-family:ui-monospace,Menlo,monospace;font-size:12px;white-space:pre-wrap; scroll-behavior: smooth;}
+    .toast{position:fixed;right:16px;bottom:16px;background:#152247;border:1px solid var(--line);border-left:4px solid var(--p);padding:10px 12px;border-radius:10px;opacity:0;transform:translateY(8px);transition:.2s; z-index: 100;}
+    .toast.show{opacity:1;transform:translateY(0)} .toast.err{border-left-color:var(--err)}
+
+    /* Tabs & History */
+    .tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--line);padding-bottom:10px}
+    .tab{padding:8px 16px;border-radius:8px;cursor:pointer;color:var(--muted);transition:.2s;font-weight:600}
+    .tab:hover{background:#182242;color:var(--text)}
+    .tab.active{background:var(--p);color:white}
+    .view{display:none} .view.active{display:block}
+    
+    .history-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
+    .history-table th,.history-table td{padding:12px;text-align:left;border-bottom:1px solid var(--line)}
+    .history-table th{color:var(--muted);font-weight:600}
+    .history-table tr:hover{background:#182242}
+    .link-btn{color:var(--p);cursor:pointer;text-decoration:underline;background:none;border:none;padding:0;font-size:13px}
+    
+    /* Drawer */
+    .drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:.3s;z-index:200}
+    .drawer-overlay.open{opacity:1;pointer-events:auto}
+    .drawer{position:fixed;right:-600px;top:0;bottom:0;width:100%;max-width:600px;background:var(--card);border-left:1px solid var(--line);transition:.3s cubic-bezier(0.4,0,0.2,1);z-index:201;display:flex;flex-direction:column;box-shadow:-4px 0 24px rgba(0,0,0,0.5)}
+    .drawer.open{right:0}
+    .drawer-header{padding:16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+    .drawer-close{cursor:pointer;color:var(--muted);background:none;border:none;font-size:24px;line-height:1;padding:4px}
+    .drawer-close:hover{color:var(--text)}
+    .drawer-body{padding:16px;overflow-y:auto;flex:1}
+    .md-preview{background:#0a1225;padding:16px;border-radius:8px;border:1px solid var(--line);font-size:14px;line-height:1.6;color:var(--text);overflow-x:hidden}
+    .md-preview h1,.md-preview h2,.md-preview h3{color:#fff;margin-top:24px;margin-bottom:12px;border-bottom:1px solid var(--line);padding-bottom:6px}
+    .md-preview h1{font-size:1.5em} .md-preview h2{font-size:1.3em}
+    .md-preview p{margin-bottom:12px}
+    .md-preview ul,.md-preview ol{margin-bottom:12px;padding-left:24px}
+    .md-preview li{margin-bottom:4px}
+    .md-preview a{color:var(--p);text-decoration:none} .md-preview a:hover{text-decoration:underline}
+    .md-preview pre{background:#000;padding:12px;border-radius:6px;overflow-x:auto;border:1px solid var(--line);margin-bottom:12px}
+    .md-preview code{font-family:ui-monospace,Menlo,monospace;background:rgba(255,255,255,0.1);padding:2px 4px;border-radius:4px;font-size:0.9em}
+    .md-preview pre code{background:none;padding:0}
+    .md-preview blockquote{border-left:4px solid var(--p);margin:0 0 12px 0;padding-left:12px;color:var(--muted)}
+
+    @media (max-width:1024px){.wrap{grid-template-columns:1fr}.result{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}}
+
+    @media (max-width:640px){.result{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <aside class="panel side">
+    <div class="title">KnowledgeOS 控制台</div>
+    <div class="sub">真实调用流水线</div>
+    <div class="steps" id="steps"></div>
+  </aside>
+
+  <main class="main">
+    <div class="tabs">
+      <div class="tab active" data-target="view-current">当前运行</div>
+      <div class="tab" data-target="view-history">历史记录</div>
+    </div>
+
+    <!-- 视图：当前运行 -->
+    <div id="view-current" class="view active">
+      <section class="panel card" id="overviewPanel">
+      <div class="title">
+        <span>流程总览</span>
+        <span id="stBadge" class="meta-tag">idle</span>
+      </div>
+      <div class="bar" id="barWrap"><div id="bar"></div></div>
+      <div class="meta">
+        <span id="cs" class="meta-tag">当前步骤：-</span>
+        <span id="el" class="meta-tag">耗时：0s</span>
+        <span id="rv" class="meta-tag">恢复点：-</span>
+      </div>
+    </section>
+
+    <section class="panel card">
+      <div class="title">参数配置与控制</div>
+      <div class="grid" style="margin-top:10px">
+        <div class="f"><label>主题</label><input id="topic" value="AI Agent Framework"></div>
+        <div class="f"><label>最大结果</label><input id="max" type="number" min="1" max="50" value="5"></div>
+        <div class="f"><label>超时秒数</label><input id="timeout" type="number" min="1" max="120" value="20"></div>
+        <div class="f"><label>重试次数</label><input id="retries" type="number" min="0" max="10" value="3"></div>
+        <div class="f"><label>日志格式</label><select id="log"><option value="plain">plain</option><option value="json">json</option></select></div>
+        <div class="f"><label>NotebookLM 自动分析</label><select id="nbAuto"><option value="false">关闭</option><option value="true">开启</option></select></div>
+        <div class="f"><label>NOTEBOOKLM_HOME</label><input id="nbHome" placeholder="~/.notebooklm" value=""></div>
+      </div>
+      <div class="btns">
+        <button class="b1" id="start">启动</button>
+        <button class="b2" id="pause">暂停</button>
+        <button class="b3" id="resume">继续</button>
+        <button class="b3" id="retry">重试当前步骤</button>
+        <button class="b4" id="reset">重置</button>
+      </div>
+    </section>
+
+    <section class="panel card">
+      <div class="title">执行结果</div>
+      <div class="result" style="margin-top:10px">
+        <div class="ri"><div class="k">run_id</div><div class="v" id="run">-</div></div>
+        <div class="ri"><div class="k">error_code</div><div class="v" id="err">-</div></div>
+        <div class="ri"><div class="k">status</div><div class="v" id="rst">-</div></div>
+        <div class="ri"><div class="k">source_count</div><div class="v" id="cnt">-</div></div>
+        <div class="ri"><div class="k">artifact(markdown)</div><div class="v" id="art">-</div></div>
+        <div class="ri"><div class="k">notebook_id</div><div class="v" id="nbid">-</div></div>
+        <div class="ri"><div class="k">NotebookLM</div><div class="v"><a id="nblink" href="https://notebooklm.google.com/notebook/" target="_blank" rel="noopener noreferrer" style="color:#7ac0ff;text-decoration:none">打开</a></div></div>
+        <div class="ri"><div class="k">更新时间</div><div class="v" id="upd">-</div></div>
+      </div>
+    </section>
+
+    <section class="panel card">
+        <div class="title">实时日志</div>
+        <div class="log" id="logBox"></div>
+      </section>
+    </div>
+
+    <!-- 视图：历史记录 -->
+    <div id="view-history" class="view">
+      <section class="panel card">
+        <div class="title">历史运行记录</div>
+        <div style="overflow-x:auto">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>主题 (Topic)</th>
+                <th>状态</th>
+                <th>耗时</th>
+                <th>来源数</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="historyBody">
+              <tr><td colspan="5" style="text-align:center;color:var(--muted)">加载中...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<!-- 抽屉：Markdown 预览 -->
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <div class="title">产物预览 <span class="meta-tag" id="drawerTopic" style="margin-left:8px;font-weight:normal"></span></div>
+    <button class="drawer-close" id="drawerClose">&times;</button>
+  </div>
+  <div class="drawer-body">
+    <div class="meta" style="margin-top:0;margin-bottom:16px" id="drawerMeta"></div>
+    <div class="md-preview" id="mdPreview">加载中...</div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+  const utils = window.WorkflowAppUtils || {};
+  const safeText = utils.safeText || ((value, fallback="-") => {
+    const text = String(value ?? "").trim();
+    return text || fallback;
+  });
+  const safeNumber = utils.safeNumber || ((value, fallback=0) => {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : fallback;
+  });
+  const escapeHtml = utils.escapeHtml || (value => String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;"));
+  const toSafeHref = utils.toSafeHref || (() => "#");
+  const normalizeStepStatus = utils.normalizeStepStatus || (value => safeText(value, "pending"));
+  const normalizeRunStatus = utils.normalizeRunStatus || (value => safeText(value, "unknown"));
+  const setStatusConfig = utils.setStatusConfig || (() => {});
+
+  const qs = s => document.querySelector(s);
+  const stepsEl = qs("#steps"), bar = qs("#bar"), st = qs("#st"), cs = qs("#cs"), el = qs("#el"), rv = qs("#rv");
+  const run = qs("#run"), err = qs("#err"), rst = qs("#rst"), cnt = qs("#cnt"), art = qs("#art"), nbid = qs("#nbid"), nblink = qs("#nblink"), upd = qs("#upd"), logBox = qs("#logBox");
+  const toastEl = qs("#toast");
+
+  function toast(msg, isErr=false){
+    toastEl.textContent = msg;
+    toastEl.className = "toast show" + (isErr ? " err" : "");
+    setTimeout(()=>toastEl.className="toast", 1500);
+  }
+
+  function renderHistoryStateRow(tbody, text, colorVar) {
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 5;
+    cell.style.textAlign = "center";
+    cell.style.color = colorVar;
+    cell.textContent = text;
+    row.appendChild(cell);
+    tbody.replaceChildren(row);
+  }
+
+  function renderMarkdownSafe(content) {
+    const source = String(content ?? "");
+    const escaped = escapeHtml(source);
+    const renderer = new marked.Renderer();
+    renderer.link = ({ href, title, tokens }) => {
+      const safeHref = toSafeHref(href);
+      const safeTitle = title ? ` title="${escapeHtml(title)}"` : "";
+      const text = marked.Parser.parseInline(tokens || []);
+      if (safeHref === "#") {
+        return `<a href="#" rel="noopener noreferrer"${safeTitle}>${text}</a>`;
+      }
+      return `<a href="${safeHref}" target="_blank" rel="noopener noreferrer"${safeTitle}>${text}</a>`;
+    };
+    return marked.parse(escaped, { renderer });
+  }
+
+  async function call(path, body={}){
+    const res = await fetch(path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || "request failed");
+    return data;
+  }
+
+  function renderSteps(steps){
+    stepsEl.innerHTML = "";
+    let current = "-";
+    for(const s of steps){
+      const status = normalizeStepStatus(s.status);
+      const div = document.createElement("div");
+      const stepName = safeText(s.name, "-");
+      if(status === "running" || status === "error") current = stepName;
+      div.className = `step is-${status}`;
+      const nameSpan = document.createElement("span");
+      nameSpan.textContent = stepName;
+      const statusSpan = document.createElement("span");
+      statusSpan.className = `s-${status === "done" ? "done" : status === "error" ? "error" : status === "running" ? "running" : "pending"}`;
+      statusSpan.textContent = status;
+      div.appendChild(nameSpan);
+      div.appendChild(statusSpan);
+      stepsEl.appendChild(div);
+    }
+    cs.textContent = `当前步骤：${current}`;
+  }
+
+  function renderState(d){
+    const runStatus = normalizeRunStatus(d.status);
+    const isError = runStatus === "error";
+    qs("#overviewPanel").className = "panel card" + (isError ? " has-error" : "");
+    qs("#barWrap").className = "bar" + (isError ? " is-error" : "");
+    qs("#err").parentElement.className = "ri" + (d.error_code ? " highlight-err" : "");
+    
+    qs("#stBadge").textContent = runStatus;
+    qs("#stBadge").className = "meta-tag" + (isError ? " err" : "");
+    
+    el.textContent = `耗时：${d.elapsed_seconds}s`;
+    bar.style.width = `${d.progress || 0}%`;
+    renderSteps(d.steps || []);
+    run.textContent = d.run_id || "-";
+    err.textContent = d.error_code || "-";
+    const rr = d.result || {};
+    rst.textContent = normalizeRunStatus(rr.status || runStatus);
+    cnt.textContent = rr.source_count ?? "-";
+    art.textContent = rr.artifacts?.markdown || "-";
+    const notebook = rr.notebooklm || {};
+    const notebookId = notebook.notebook_id || "";
+    const notebookUrl = notebook.notebook_url || "https://notebooklm.google.com";
+    nbid.textContent = notebookId || "-";
+    nblink.href = toSafeHref(notebookUrl);
+    upd.textContent = new Date().toLocaleString();
+    
+    const prevLogCount = logBox.textContent.length;
+    logBox.textContent = (d.logs || []).join("\n");
+    if (logBox.textContent.length !== prevLogCount) {
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    const isRunning = runStatus === "running";
+    const isPaused = runStatus === "paused";
+    const recovery = d.recovery || {};
+    
+    rv.textContent = `恢复点：${recovery.last_step || "-"}`;
+    rv.className = "meta-tag" + (recovery.can_retry ? "" : " err");
+    
+    qs("#start").disabled = isRunning || isPaused;
+    qs("#start").title = (isRunning || isPaused) ? "已有任务在运行" : "";
+    
+    qs("#pause").disabled = !isRunning;
+    qs("#resume").disabled = !isPaused;
+    
+    const retryBtn = qs("#retry");
+    retryBtn.disabled = !recovery.can_retry || isRunning || isPaused;
+    if (isRunning || isPaused) retryBtn.title = "请先暂停或等待运行结束";
+    else if (!recovery.can_retry) retryBtn.title = "当前没有可恢复的执行快照";
+    else retryBtn.title = `从 ${recovery.last_step || '初始'} 节点重试`;
+  }
+
+  async function refresh(){
+    try{
+      const d = await fetch("/api/state").then(r=>r.json());
+      renderState(d);
+    }catch(e){}
+  }
+
+  async function loadUiConfig() {
+    try {
+      const response = await fetch("/api/ui-config");
+      if (!response.ok) return;
+      const config = await response.json();
+      setStatusConfig(config);
+    } catch(e) {}
+  }
+
+  qs("#start").onclick = async () => {
+    try{
+      await call("/api/start", {
+        topic: qs("#topic").value.trim(),
+        max_results: Number(qs("#max").value),
+        timeout_seconds: Number(qs("#timeout").value),
+        retries: Number(qs("#retries").value),
+        log_format: qs("#log").value,
+        notebooklm_auto_analyze: qs("#nbAuto").value === "true",
+        notebooklm_home: qs("#nbHome").value.trim()
+      });
+      toast("已启动");
+      refresh();
+    }catch(e){ toast(e.message, true); }
+  };
+
+  qs("#pause").onclick = async () => { try{ await call("/api/pause"); toast("已暂停"); refresh(); }catch(e){ toast(e.message, true); } };
+  qs("#resume").onclick = async () => { try{ await call("/api/resume"); toast("已继续"); refresh(); }catch(e){ toast(e.message, true); } };
+  qs("#retry").onclick = async () => { try{ await call("/api/retry-step"); toast("已重试"); refresh(); }catch(e){ toast(e.message, true); } };
+  qs("#reset").onclick = async () => { try{ await call("/api/reset"); toast("已重置"); refresh(); }catch(e){ toast(e.message, true); } };
+
+  // Form persistence logic
+  const FORM_KEY = "knowledgeos_form_prefs";
+  function saveFormPrefs() {
+    const prefs = {
+      topic: qs("#topic").value,
+      max: qs("#max").value,
+      timeout: qs("#timeout").value,
+      retries: qs("#retries").value,
+      log: qs("#log").value,
+      nbAuto: qs("#nbAuto").value,
+      nbHome: qs("#nbHome").value
+    };
+    localStorage.setItem(FORM_KEY, JSON.stringify(prefs));
+  }
+  function loadFormPrefs() {
+    try {
+      const prefs = JSON.parse(localStorage.getItem(FORM_KEY));
+      if(!prefs) return;
+      if(prefs.topic) qs("#topic").value = prefs.topic;
+      if(prefs.max) qs("#max").value = prefs.max;
+      if(prefs.timeout) qs("#timeout").value = prefs.timeout;
+      if(prefs.retries) qs("#retries").value = prefs.retries;
+      if(prefs.log) qs("#log").value = prefs.log;
+      if(prefs.nbAuto) qs("#nbAuto").value = prefs.nbAuto;
+      if(prefs.nbHome) qs("#nbHome").value = prefs.nbHome;
+    } catch(e){}
+  }
+  // Attach change listeners to form inputs
+  ["#topic","#max","#timeout","#retries","#log","#nbAuto","#nbHome"].forEach(id => {
+    qs(id).addEventListener('input', saveFormPrefs);
+    qs(id).addEventListener('change', saveFormPrefs);
+  });
+  loadFormPrefs();
+
+  // Tabs logic
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.onclick = () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(tab.dataset.target).classList.add('active');
+      if(tab.dataset.target === 'view-history') loadHistory();
+    };
+  });
+
+  // Drawer logic
+  const drawer = qs("#drawer"), overlay = qs("#drawerOverlay"), mdPreview = qs("#mdPreview");
+  const closeDrawer = () => { drawer.classList.remove("open"); overlay.classList.remove("open"); };
+  qs("#drawerClose").onclick = closeDrawer;
+  overlay.onclick = closeDrawer;
+
+  async function openArtifact(runId, topic, status, duration) {
+    const safeStatus = normalizeRunStatus(status);
+    qs("#drawerTopic").textContent = safeText(topic, "untitled");
+    const meta = qs("#drawerMeta");
+    meta.replaceChildren();
+    const statusTag = document.createElement("span");
+    statusTag.className = "meta-tag" + (safeStatus === "done" ? "" : " err");
+    statusTag.textContent = safeStatus;
+    const durationTag = document.createElement("span");
+    durationTag.className = "meta-tag";
+    durationTag.textContent = `耗时: ${safeNumber(duration)}ms`;
+    meta.appendChild(statusTag);
+    meta.appendChild(durationTag);
+    mdPreview.textContent = "加载中...";
+    drawer.classList.add("open");
+    overlay.classList.add("open");
+    
+    try {
+      const res = await fetch(`/api/runs/${encodeURIComponent(runId)}/artifact`);
+      if(!res.ok) throw new Error("获取产物失败");
+      const data = await res.json();
+      const preview = data.preview_content || data.content || "";
+      mdPreview.innerHTML = preview ? renderMarkdownSafe(preview) : "无内容";
+    } catch(e) {
+      mdPreview.textContent = `加载失败: ${e.message}`;
+    }
+  }
+
+  async function exportArtifact(runId, topic) {
+    try {
+      const link = document.createElement("a");
+      link.href = `/api/runs/${encodeURIComponent(runId)}/artifact/download`;
+      const safeTopic = (topic || "untitled").trim().replace(/\s+/g, "_").replace(/[^\w-]/g, "");
+      link.download = `${safeTopic || "untitled"}.md`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast("导出完成");
+    } catch(e) {
+      toast(e.message || "导出失败", true);
+    }
+  }
+
+  async function shareArtifact(runId) {
+    try {
+      const url = `${location.origin}/api/runs/${encodeURIComponent(runId)}/artifact/download`;
+      await navigator.clipboard.writeText(url);
+      toast("分享链接已复制");
+    } catch(e) {
+      toast("复制失败，请手动复制链接", true);
+    }
+  }
+
+  // History logic
+  async function loadHistory() {
+    const tbody = qs("#historyBody");
+    try {
+      const res = await fetch("/api/runs");
+      const data = await res.json();
+      const runs = data.runs || [];
+      
+      if(runs.length === 0) {
+        renderHistoryStateRow(tbody, "暂无历史记录", "var(--muted)");
+        return;
+      }
+
+      const fragment = document.createDocumentFragment();
+      for (const runRecord of runs) {
+        const row = document.createElement("tr");
+        const topic = safeText(runRecord.topic, "untitled");
+        const status = normalizeRunStatus(runRecord.status);
+        const durationMs = safeNumber(runRecord.duration_ms);
+        const sourceCount = safeNumber(runRecord.source_count, 0);
+        const runId = safeText(runRecord.run_id, "");
+        const hasMd = Boolean(runRecord.artifacts && runRecord.artifacts.markdown);
+
+        const topicCell = document.createElement("td");
+        topicCell.style.fontWeight = "600";
+        topicCell.textContent = topic;
+
+        const statusCell = document.createElement("td");
+        const statusTag = document.createElement("span");
+        statusTag.className = `s-${status === "done" ? "done" : status === "error" ? "error" : status === "running" ? "running" : "pending"}`;
+        statusTag.textContent = status;
+        statusCell.appendChild(statusTag);
+
+        const durationCell = document.createElement("td");
+        durationCell.textContent = `${(durationMs / 1000).toFixed(1)}s`;
+
+        const sourceCell = document.createElement("td");
+        sourceCell.textContent = String(sourceCount);
+
+        const actionCell = document.createElement("td");
+        if (hasMd && runId) {
+          const actions = [
+            { action: "preview", label: "查看" },
+            { action: "export", label: "导出" },
+            { action: "share", label: "分享" },
+          ];
+          for (const actionItem of actions) {
+            const button = document.createElement("button");
+            button.className = "link-btn";
+            button.type = "button";
+            button.dataset.action = actionItem.action;
+            button.dataset.runId = runId;
+            button.dataset.topic = topic;
+            button.dataset.status = status;
+            button.dataset.duration = String(durationMs);
+            button.textContent = actionItem.label;
+            actionCell.appendChild(button);
+          }
+        } else {
+          const noArtifact = document.createElement("span");
+          noArtifact.style.color = "var(--muted)";
+          noArtifact.style.fontSize = "13px";
+          noArtifact.textContent = "无产物";
+          actionCell.appendChild(noArtifact);
+        }
+
+        row.appendChild(topicCell);
+        row.appendChild(statusCell);
+        row.appendChild(durationCell);
+        row.appendChild(sourceCell);
+        row.appendChild(actionCell);
+        fragment.appendChild(row);
+      }
+      tbody.replaceChildren(fragment);
+    } catch(e) {
+      const message = safeText(e?.message, "未知错误");
+      renderHistoryStateRow(tbody, `加载失败: ${message}`, "var(--err)");
+    }
+  }
+
+  qs("#historyBody").addEventListener("click", event => {
+    const target = event.target.closest("button[data-action]");
+    if (!target) return;
+    const runId = target.dataset.runId || "";
+    const topic = target.dataset.topic || "untitled";
+    const status = target.dataset.status || "unknown";
+    const duration = safeNumber(target.dataset.duration, 0);
+    if (!runId) return;
+
+    if (target.dataset.action === "preview") {
+      openArtifact(runId, topic, status, duration);
+      return;
+    }
+    if (target.dataset.action === "export") {
+      exportArtifact(runId, topic);
+      return;
+    }
+    if (target.dataset.action === "share") {
+      shareArtifact(runId);
+    }
+  });
+
+  loadUiConfig().finally(() => {
+    refresh();
+    setInterval(refresh, 1000);
+  });
+</script>
+</body>
+</html>

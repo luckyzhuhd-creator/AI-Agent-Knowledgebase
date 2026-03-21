@@ -1,6 +1,14 @@
 import pytest
 
-from agents.pipeline_error import DEPENDENCY_MISSING, PipelineError, SOURCE_FETCH_FAILED, SSL_CERTIFICATE_VERIFY_FAILED
+from agents.pipeline_error import (
+    DEPENDENCY_MISSING,
+    PipelineError,
+    SOURCE_FETCH_FAILED,
+    SOURCE_FETCH_RATE_LIMITED,
+    SOURCE_FETCH_TIMEOUT,
+    SOURCE_FETCH_UNAVAILABLE,
+    SSL_CERTIFICATE_VERIFY_FAILED,
+)
 from agents.research_agent import ResearchAgent
 import agents.research_agent as research_module
 
@@ -31,9 +39,48 @@ def test_research_agent_raises_runtime_error_when_ssl_verification_failed(monkey
     assert exc_info.value.exit_code == PipelineError.EXIT_CODE_BY_ERROR_CODE[SSL_CERTIFICATE_VERIFY_FAILED]
 
 
-def test_research_agent_raises_runtime_error_when_source_fetch_failed(monkeypatch):
+def test_research_agent_raises_runtime_error_when_source_fetch_timeout(monkeypatch):
     def fake_search_youtube(_topic):
         raise RuntimeError("gateway timeout")
+
+    monkeypatch.setattr(research_module, "search_youtube", fake_search_youtube)
+
+    with pytest.raises(PipelineError, match="timed out") as exc_info:
+        ResearchAgent().run("AI Agent Framework")
+
+    assert exc_info.value.code == SOURCE_FETCH_TIMEOUT
+    assert exc_info.value.exit_code == PipelineError.EXIT_CODE_BY_ERROR_CODE[SOURCE_FETCH_TIMEOUT]
+
+
+def test_research_agent_raises_runtime_error_when_source_fetch_rate_limited(monkeypatch):
+    def fake_search_youtube(_topic):
+        raise RuntimeError("429 too many requests")
+
+    monkeypatch.setattr(research_module, "search_youtube", fake_search_youtube)
+
+    with pytest.raises(PipelineError, match="rate limited") as exc_info:
+        ResearchAgent().run("AI Agent Framework")
+
+    assert exc_info.value.code == SOURCE_FETCH_RATE_LIMITED
+    assert exc_info.value.exit_code == PipelineError.EXIT_CODE_BY_ERROR_CODE[SOURCE_FETCH_RATE_LIMITED]
+
+
+def test_research_agent_raises_runtime_error_when_source_fetch_unavailable(monkeypatch):
+    def fake_search_youtube(_topic):
+        raise RuntimeError("503 service unavailable")
+
+    monkeypatch.setattr(research_module, "search_youtube", fake_search_youtube)
+
+    with pytest.raises(PipelineError, match="temporarily unavailable") as exc_info:
+        ResearchAgent().run("AI Agent Framework")
+
+    assert exc_info.value.code == SOURCE_FETCH_UNAVAILABLE
+    assert exc_info.value.exit_code == PipelineError.EXIT_CODE_BY_ERROR_CODE[SOURCE_FETCH_UNAVAILABLE]
+
+
+def test_research_agent_raises_runtime_error_when_source_fetch_failed(monkeypatch):
+    def fake_search_youtube(_topic):
+        raise RuntimeError("upstream gateway error")
 
     monkeypatch.setattr(research_module, "search_youtube", fake_search_youtube)
 

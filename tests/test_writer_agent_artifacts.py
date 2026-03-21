@@ -35,6 +35,13 @@ def test_writer_agent_writes_artifacts(monkeypatch, tmp_path):
     assert run_data["artifacts"]["json"].endswith("ai_agent_framework.json")
     assert run_data["artifacts"]["run"].endswith("ai_agent_framework.run.json")
 
+    json_data = json.loads(js.read_text(encoding="utf-8"))
+    assert json_data["topic"] == "AI Agent Framework"
+    assert json_data["knowledge_cards"] == [
+        {"card_id": "source-1", "title": "Source 1", "url": "https://a.com"},
+        {"card_id": "source-2", "title": "Source 2", "url": "https://b.com"},
+    ]
+
 
 def test_writer_agent_writes_failure_run_metadata(monkeypatch, tmp_path):
     monkeypatch.chdir(tmp_path)
@@ -58,3 +65,24 @@ def test_writer_agent_writes_failure_run_metadata(monkeypatch, tmp_path):
     assert run_data["error_code"] == "SOURCE_FETCH_FAILED"
     assert run_data["error_message"] == "timeout"
     assert run_data["source_count"] == 0
+
+
+def test_writer_agent_builds_knowledge_cards_from_sources(monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+
+    payload = WriterAgent().write(
+        "AI Agent Framework",
+        "# title\n\ncontent",
+        ["https://a.com"],
+        sources=[
+            {"title": "Intro", "url": "https://a.com", "platform": "youtube", "score": 0.9},
+            {"title": "", "url": "https://b.com", "platform": "website", "score": 0.5},
+        ],
+    )
+
+    js = Path(payload["artifacts"]["json"])
+    json_data = json.loads(js.read_text(encoding="utf-8"))
+    assert json_data["knowledge_cards"] == [
+        {"card_id": "source-1", "title": "Intro", "url": "https://a.com", "platform": "youtube", "score": 0.9},
+        {"card_id": "source-2", "title": "Source 2", "url": "https://b.com", "platform": "website", "score": 0.5},
+    ]

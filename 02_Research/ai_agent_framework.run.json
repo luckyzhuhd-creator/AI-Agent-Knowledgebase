@@ -1,13 +1,17 @@
 {
-  "schema_version": "1.2",
-  "run_id": "d053cab2-3a93-479a-a095-63c36d82a861",
+  "schema_version": "1.3",
+  "run_id": "e1257dc3-7448-48a8-9502-5507fef02415",
   "status": "success",
-  "duration_ms": 1626,
+  "duration_ms": 1362,
   "topic": "AI Agent Framework",
   "source_count": 5,
-  "generated_at": "2026-03-17T09:30:35.724011+00:00",
+  "generated_at": "2026-03-19T03:38:12.450203+00:00",
   "error_code": "",
   "error_message": "",
+  "notebooklm": {
+    "notebook_id": "90ed5256-5e8e-4d77-bc9e-2d1260dc1816",
+    "notebook_url": "https://notebooklm.google.com/notebook/90ed5256-5e8e-4d77-bc9e-2d1260dc1816"
+  },
   "artifacts": {
     "markdown": "02_Research/ai_agent_framework.md",
     "json": "02_Research/ai_agent_framework.json",

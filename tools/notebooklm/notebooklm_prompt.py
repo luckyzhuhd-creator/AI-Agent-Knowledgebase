@@ -1,4 +1,8 @@
+"""NotebookLM 输入提示词构建器。"""
+
+
 def generate_prompt(topic, sources):
+    """根据主题与来源列表生成标准分析提示词。"""
 
     prompt = f"""
 Template Version: v1

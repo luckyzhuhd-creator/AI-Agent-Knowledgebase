@@ -1,3 +1,5 @@
+"""研究流水线 CLI 入口。"""
+
 import json
 import logging
 import os
@@ -17,8 +19,19 @@ from agents.writer_agent import WriterAgent
 
 
 class JsonFormatter(logging.Formatter):
+    """将日志记录格式化为 JSON，便于结构化检索。"""
 
-    OPTIONAL_FIELDS = ("run_id", "topic", "error_code")
+    OPTIONAL_FIELDS = (
+        "run_id",
+        "topic",
+        "error_code",
+        "stage",
+        "event",
+        "status",
+        "duration_ms",
+        "source_count",
+        "invalid_count",
+    )
 
     def format(self, record):
         payload = {
@@ -35,6 +48,7 @@ class JsonFormatter(logging.Formatter):
 
 
 def configure_logging():
+    """根据 LOG_FORMAT 配置日志输出格式。"""
 
     if os.getenv("LOG_FORMAT", "plain").lower() == "json":
         handler = logging.StreamHandler()
@@ -49,6 +63,7 @@ def configure_logging():
 
 
 def main():
+    """解析参数并执行流水线，返回标准进程退出码。"""
 
     configure_logging()
     logger = logging.getLogger(__name__)
@@ -61,7 +76,12 @@ def main():
     topic = " ".join(sys.argv[1:]).strip()
     run_id = str(uuid4())
     started_at = perf_counter()
-    logger.info("Starting research run_id=%s topic=%s", run_id, topic)
+    logger.info(
+        "Starting research run_id=%s topic=%s",
+        run_id,
+        topic,
+        extra={"run_id": run_id, "topic": topic, "stage": "cli", "event": "run_start"},
+    )
 
     try:
         Orchestrator().run(topic, run_id=run_id)
@@ -74,7 +94,15 @@ def main():
             topic,
             exc.code,
             str(exc),
-            extra={"run_id": run_id, "topic": topic, "error_code": exc.code},
+            extra={
+                "run_id": run_id,
+                "topic": topic,
+                "error_code": exc.code,
+                "stage": "cli",
+                "event": "run_failed",
+                "status": "failed",
+                "duration_ms": duration_ms,
+            },
         )
         return exc.exit_code
     except Exception as exc:
@@ -84,10 +112,33 @@ def main():
             "Pipeline failed run_id=%s topic=%s code=UNEXPECTED_ERROR",
             run_id,
             topic,
-            extra={"run_id": run_id, "topic": topic, "error_code": UNEXPECTED_ERROR},
+            extra={
+                "run_id": run_id,
+                "topic": topic,
+                "error_code": UNEXPECTED_ERROR,
+                "stage": "cli",
+                "event": "run_failed",
+                "status": "failed",
+                "duration_ms": duration_ms,
+            },
         )
         return PipelineError.EXIT_CODE_BY_ERROR_CODE[UNEXPECTED_ERROR]
 
+    duration_ms = int((perf_counter() - started_at) * 1000)
+    logger.info(
+        "Pipeline success run_id=%s topic=%s duration_ms=%d",
+        run_id,
+        topic,
+        duration_ms,
+        extra={
+            "run_id": run_id,
+            "topic": topic,
+            "stage": "cli",
+            "event": "run_succeeded",
+            "status": "success",
+            "duration_ms": duration_ms,
+        },
+    )
     return 0
 
 
